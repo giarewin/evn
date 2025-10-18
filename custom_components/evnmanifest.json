@@ -1,0 +1,11 @@
+{
+  "domain": "evn",
+  "name": "Mua Bán Điện",
+  "version": "1.0.0",
+  "documentation": "https://github.com/giarewin/evn",
+  "issue_tracker": "https://github.com/giarewin/evn/issues",
+  "codeowners": ["@giarewin"],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "requirements": []
+}
