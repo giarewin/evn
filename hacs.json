@@ -1,0 +1,9 @@
+{
+    "name": "Mua Bán Điện",
+    "render_readme": true,
+    "domain": "evn",
+    "documentation": "https://github.com/giarewin/evn",
+    "issue_tracker": "https://github.com/giarewin/evn/issues",
+    "content_in_root": false,
+    "homeassistant": "2025.1.0"
+  }
