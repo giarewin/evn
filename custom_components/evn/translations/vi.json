@@ -1,0 +1,27 @@
+{
+  "entity": {
+    "sensor": {
+      "total_buy": { "name": "Tổng Mua" },
+      "total_sell": { "name": "Tổng Bán" },
+
+      "buy_day":   { "name": "Mua Hôm Nay" },
+      "sell_day":  { "name": "Bán Hôm Nay" },
+
+      "buy_month":  { "name": "Mua Tháng Này" },
+      "sell_month": { "name": "Bán Tháng Này" },
+
+      "buy_year":  { "name": "Mua Năm Nay" },
+      "sell_year": { "name": "Bán Năm Nay" },
+
+      "buy_cost_day":   { "name": "Tiền Điện Hôm Nay" },
+      "buy_cost_month": { "name": "Tiền Điện Tháng Này" },
+      "buy_cost_year":  { "name": "Tiền Điện Năm Nay" },
+
+      "sell_revenue_day":   { "name": "Tiền Bán Hôm Nay" },
+      "sell_revenue_month": { "name": "Tiền Bán Tháng Này" },
+      "sell_revenue_year":  { "name": "Tiền Bán Năm Nay" },
+
+      "last_updated": { "name": "Cập nhật lần cuối" }
+    }
+  }
+}
