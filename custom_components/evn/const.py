@@ -17,8 +17,8 @@ DEFAULT_REVERSE = "sensor.evn_total_reverse_energy"
 DEFAULT_INTERVAL_MIN = 1
 
 # Thư mục mặc định mới: /config/custom_components/{DOMAIN}
-DEFAULT_DIR = f"/config/custom_components/{DOMAIN}/data"
-
+#DEFAULT_DIR = f"/config/custom_components/{DOMAIN}/data"
+DEFAULT_DIR = f"/config/www/{DOMAIN}/data"
 # --------------------------
 # Storage/CSV
 # --------------------------
@@ -28,10 +28,17 @@ STORAGE_KEY_FMT = "evn_billing_{entry_id}"
 # CẤU TRÚC CSV MỚI:
 # date|hour|min_sec|total_buy|buy_day|buy_month|buy_year|total_sell|sell_day|sell_month|sell_year
 CSV_HEADER = (
-    "date|hour|min_sec|total_buy|buy_day|buy_month|buy_year|"
-    "total_sell|sell_day|sell_month|sell_year"
+    "date,hour,min_sec,total_buy,"
+    "buy_hour,buy_hour_cost,"
+    "buy_day,buy_day_cost,"
+    "buy_month,buy_month_cost,"
+    "buy_year,buy_year_cost,"
+    "total_sell,"
+    "sell_hour,sell_hour_cost,"
+    "sell_day,sell_day_cost,"
+    "sell_month,sell_month_cost,"
+    "sell_year,sell_year_cost"
 )
-
 # --------------------------
 # EVN 2025 tiers + VAT
 # --------------------------
@@ -43,8 +50,8 @@ EVN_TIERS = [
     (100.0, 3350.0),
     (None, 3460.0),
 ]
-EVN_VAT = 0.08
-EVN_SELL_PRICE = 2275.0  # đ/kWh, không VAT
+EVN_VAT = 0.08          # thuế 8% tính trong phần mua điện
+EVN_SELL_PRICE = 2275.0  # giá bán điện đơn vị đ/kWh, không VAT
 
 # --------------------------
 # Options one-shot nhập kWh

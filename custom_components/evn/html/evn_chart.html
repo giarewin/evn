@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>EVN - Biểu đồ Mua / Bán (Giờ / Ngày / Tháng / Năm)</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Plugin hiển thị số trên cột -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <!-- Plugin zoom/pinch -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-body: #f9fafb;
+      --text-main: #111827;
+      --header-bg: linear-gradient(90deg, #e5e7eb, #d1d5db);
+      --card-bg: radial-gradient(circle at top, #ffffff 0, #f3f4f6 55%, #e5e7eb 100%);
+      --border-soft: #d1d5db;
+      --grid-color: rgba(156, 163, 175, 0.6);
+      --footer-text: #4b5563;
+      --axis-text: #4b5563;
+      --muted-text: #6b7280;
+      --label-text: #111827;
+    }
+
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+    * { box-sizing: inherit; }
+
+    #wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #header {
+      display: flex;
+      align-items: center;
+      padding: 4px 6px;
+      background: var(--header-bg);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    #controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      flex-wrap: wrap;
+    }
+
+    #modeToggle {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 2px;
+      background: rgba(15,23,42,0.02);
+      border: 1px solid var(--border-soft);
+    }
+
+    .mode-btn {
+      border: none;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--muted-text);
+      background: transparent;
+      white-space: nowrap;
+    }
+    .mode-btn.active {
+      background: linear-gradient(135deg, #2563eb, #22c55e);
+      color: #f9fafb;
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.2);
+    }
+
+    #dateWrapper, #monthWrapper, #yearWrapper {
+      position: relative;
+      display: none;
+      align-items: center;
+    }
+
+    #dateDisplay, #monthDisplay, #yearDisplay {
+      padding: 5px 10px;
+      min-width: 95px;
+      border-radius: 8px;
+      border: 1px solid var(--border-soft);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    #datePicker, #monthPicker, #yearPicker {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background: transparent;
+      color: transparent;
+      border: none;
+    }
+
+    #chart-card {
+      flex: 1;
+      min-height: 0;
+      padding: 4px;
+      border-radius: 10px;
+      background: var(--card-bg);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #chart-container {
+      position: relative;
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+    }
+
+    #evnChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    #chart-footer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 2px 4px 6px;
+      font-size: 12px;
+      color: var(--footer-text);
+      flex-shrink: 0;
+    }
+
+    #dateFooter {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    #legendCustom {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      color: var(--text-main);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .legend-box {
+      width: 18px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(15,23,42,0.2);
+    }
+
+    .legend-box.buy {
+      background: rgba(250, 204, 21, 0.85);
+      border-color: rgba(88, 28, 135, 0.9);
+    }
+    .legend-box.sell {
+      background: rgba(34, 197, 94, 0.85);
+      border-color: rgba(15, 23, 42, 0.9);
+    }
+
+    .legend-item.disabled { opacity: 0.35; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="header">
+      <div id="controls">
+        <div id="modeToggle">
+          <button class="mode-btn" data-mode="day">Giờ</button>
+          <button class="mode-btn" data-mode="month">Ngày</button>
+          <button class="mode-btn active" data-mode="year">Tháng</button>
+          <button class="mode-btn" data-mode="yearsum">Năm</button>
+        </div>
+
+        <div id="dateWrapper">
+          <div id="dateDisplay">--/--/----</div>
+          <input type="date" id="datePicker">
+        </div>
+
+        <div id="monthWrapper">
+          <div id="monthDisplay">--/----</div>
+          <input type="month" id="monthPicker">
+        </div>
+
+        <div id="yearWrapper">
+          <div id="yearDisplay">----</div>
+          <select id="yearPicker"></select>
+        </div>
+      </div>
+    </div>
+
+    <div id="chart-card">
+      <div id="chart-container">
+        <canvas id="evnChart"></canvas>
+      </div>
+      <div id="chart-footer">
+        <span id="dateFooter">--/--/----</span>
+        <div id="legendCustom">
+          <span class="legend-item" data-dataset-index="0">
+            <span class="legend-box buy"></span>
+            <span>Mua</span>
+          </span>
+          <span class="legend-item" data-dataset-index="1">
+            <span class="legend-box sell"></span>
+            <span>Bán</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUAN TRỌNG: 3 script này nằm CUỐI BODY, đúng thứ tự -->
+  <script src="evn_chart.js?v=11"></script>
+
+</body>
+</html>
