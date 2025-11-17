@@ -1,5 +1,6 @@
 {
     "name": "Mua Bán Điện",
+    "version": "0.0.1",
     "render_readme": true,
     "domain": "evn",
     "documentation": "https://github.com/giarewin/evn",
