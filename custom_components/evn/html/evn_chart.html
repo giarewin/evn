@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>EVN - Biểu đồ Mua / Bán (Giờ / Ngày / Tháng / Năm)</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Plugin hiển thị số trên cột -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <!-- Plugin zoom cho Chart.js (bản UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js"></script>
+
+  <style>
+    /* ===== MÀU CHUNG (giữ light/dark, nền phẳng, không card lồng card) ===== */
+    :root {
+      --bg-body: transparent;         /* để hòa với card của HA */
+      --text-main: #111827;
+      --header-bg: transparent;
+      --card-bg: transparent;
+      --border-soft: #e5e7eb;
+      --grid-color: rgba(156, 163, 175, 0.6);
+      --footer-text: #4b5563;
+      --axis-text: #4b5563;
+      --muted-text: #6b7280;
+      --label-text: #111827;
+    }
+
+    html[data-theme="dark"] {
+      --bg-body: transparent;
+      --text-main: #e5e7eb;
+      --header-bg: transparent;
+      --card-bg: transparent;
+      --border-soft: #374151;
+      --grid-color: rgba(75, 85, 99, 0.5);
+      --footer-text: #9ca3af;
+      --axis-text: #9ca3af;
+      --muted-text: #9ca3af;
+      --label-text: #f9fafb;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+
+    * {
+      box-sizing: inherit;
+    }
+
+    #wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      gap: 2px;
+    }
+
+    /* ===== THANH ĐIỀU KHIỂN TRÊN (mode + ngày/tháng/năm) ===== */
+    #header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 4px 4px;
+      background: var(--header-bg);
+      border: none;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    #controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 6px;
+    }
+
+    #controls-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #controls-right {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    #controls label {
+      display: none;
+    }
+
+    /* Nút chọn chế độ Giờ / Ngày / Tháng / Năm */
+    #modeToggle {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 2px;
+      background: #e5e7eb;
+      border: 1px solid var(--border-soft);
+    }
+
+    html[data-theme="dark"] #modeToggle {
+      background: #111827;
+    }
+
+    .mode-btn {
+      border: none;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--muted-text);
+      background: transparent;
+      white-space: nowrap;
+    }
+
+    .mode-btn.active {
+      background: #22c55e;
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    /* Ô hiển thị ngày / tháng / năm dạng “pill” */
+    #dateWrapper,
+    #monthWrapper,
+    #yearWrapper {
+      position: relative;
+      display: none; /* JS sẽ bật cái nào cần */
+      align-items: center;
+    }
+
+    #dateDisplay,
+    #monthDisplay,
+    #yearDisplay {
+      padding: 4px 12px;
+      min-width: 96px;
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    html[data-theme="dark"] #dateDisplay,
+    html[data-theme="dark"] #monthDisplay,
+    html[data-theme="dark"] #yearDisplay {
+      background: #020617;
+    }
+
+    #datePicker,
+    #monthPicker {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background: transparent;
+      color: transparent;
+      border: none;
+    }
+
+    #yearPicker {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background: transparent;
+      color: transparent;
+      border: none;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="month"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+    }
+
+    /* ===== VÙNG BIỂU ĐỒ ===== */
+    #chart-card {
+      flex: 1;
+      min-height: 220px;
+      padding: 0 2px 0;
+      background: var(--card-bg);
+      border: none;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #chart-container {
+      position: relative;
+      width: 100%;
+      flex: 1;
+      min-height: 200px;
+    }
+
+    #evnChart {
+      width: 100% !important;
+      height: 100% !important;
+      touch-action: none;   /* rất quan trọng: để plugin nhận pinch, không bị browser ăn gesture */
+    }
+
+    /* ===== CHÂN BIỂU ĐỒ: NGÀY + LEGEND ===== */
+    #chart-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 4px 2px;
+      font-size: 12px;
+      color: var(--footer-text);
+      border-top: 1px solid var(--border-soft);
+      margin-top: 2px;
+    }
+
+    #dateFooter {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    #legendCustom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      color: var(--text-main);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .legend-box {
+      width: 12px;
+      height: 8px;
+      border-radius: 2px;
+      border: 1px solid rgba(15,23,42,0.2);
+    }
+
+    .legend-box.buy {
+      background: rgba(250, 204, 21, 0.85);
+      border-color: rgba(88, 28, 135, 0.9);
+    }
+
+    .legend-box.sell {
+      background: rgba(34, 197, 94, 0.85);
+      border-color: rgba(15, 23, 42, 0.9);
+    }
+
+    .legend-item.disabled {
+      opacity: 0.35;
+    }
+
+    @media (max-width: 480px) {
+      #controls {
+        gap: 4px;
+      }
+      .mode-btn {
+        padding: 3px 6px;
+        font-size: 11px;
+      }
+      #dateDisplay, #monthDisplay, #yearDisplay {
+        padding-inline: 10px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="header">
+      <div id="controls">
+        <div id="controls-left">
+          <!-- Nút chọn chế độ: Giờ / Ngày / Tháng / Năm -->
+          <div id="modeToggle">
+            <button class="mode-btn" data-mode="day">Giờ</button>
+            <button class="mode-btn" data-mode="month">Ngày</button>
+            <button class="mode-btn active" data-mode="year">Tháng</button>
+            <button class="mode-btn" data-mode="yearsum">Năm</button>
+          </div>
+        </div>
+
+        <div id="controls-right">
+          <!-- Chọn NGÀY (theo giờ) -->
+          <div id="dateWrapper">
+            <div id="dateDisplay">--/--/----</div>
+            <input type="date" id="datePicker">
+          </div>
+
+          <!-- Chọn THÁNG (theo ngày trong tháng) -->
+          <div id="monthWrapper">
+            <div id="monthDisplay">--/----</div>
+            <input type="month" id="monthPicker">
+          </div>
+
+          <!-- Chọn NĂM (theo tháng trong năm) -->
+          <div id="yearWrapper">
+            <div id="yearDisplay">----</div>
+            <select id="yearPicker"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="chart-card">
+      <div id="chart-container">
+        <canvas id="evnChart"></canvas>
+      </div>
+
+      <div id="chart-footer">
+        <span id="dateFooter">--/--/----</span>
+        <div id="legendCustom">
+          <span class="legend-item" data-dataset-index="0">
+            <span class="legend-box buy"></span>
+            <span>Mua</span>
+          </span>
+          <span class="legend-item" data-dataset-index="1">
+            <span class="legend-box sell"></span>
+            <span>Bán</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toàn bộ xử lý để trong file riêng -->
+  <!-- Nếu để trong /config/www thì đường dẫn là /local/evn_chart.js -->
+  <script src="evn_chart.js"></script>
+</body>
+</html>
